@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Scheduler</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+        h1, h2 { color: #333; }
+        #app { display: flex; gap: 40px; }
+        #formContainer, #listContainer { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        form { display: grid; gap: 10px; }
+        form input, form textarea { width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        form button { padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        form button:hover { background: #0056b3; }
+        ul { list-style: none; padding: 0; }
+        li { background: #e9ecef; padding: 10px; margin-bottom: 5px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <h1>My Event Scheduler</h1>
+
+    <div id="app">
+        <div id="formContainer">
+            <h2>Add a New Event</h2>
+            <form id="eventForm">
+                <input type="text" id="title" placeholder="Event Title" required>
+                <textarea id="description" placeholder="Description"></textarea>
+                <input type="datetime-local" id="eventDate" required>
+                <input type="text" id="user" placeholder="User Name" required>
+                <button type="submit">Create Event</button>
+            </form>
+        </div>
+
+        <div id="listContainer">
+            <h2>My Events</h2>
+            <ul id="eventList">
+                </ul>
+        </div>
+    </div>
+
+    <script>
+        // உங்கள் API-இன் URL
+        const API_URL = 'http://localhost:3000/api/events';
+
+        // HTML-ல் உள்ள முக்கிய இடங்கள்
+        const form = document.getElementById('eventForm');
+        const eventList = document.getElementById('eventList');
+
+        // 1. எல்லா Events-ஐயும் API-ல் இருந்து வாங்கி, பக்கத்தில் காட்டுவதற்கான ஃபங்ஷன்
+        async function fetchEvents() {
+            try {
+                const response = await fetch(API_URL);
+                const events = await response.json();
+
+                // பழைய லிஸ்ட்டை காலி செய்யவும்
+                eventList.innerHTML = ''; 
+
+                // ஒவ்வொரு event-ஐயும் லிஸ்ட்டில் சேர்க்கவும்
+                events.forEach(event => {
+                    const li = document.createElement('li');
+                    li.textContent = `${event.title} (User: ${event.user}) - ${new Date(event.eventDate).toLocaleString()}`;
+                    eventList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching events:', error);
+            }
+        }
+
+        // 2. ஃபார்மை (Form) சப்மிட் (Submit) செய்தால், புதிய Event-ஐ உருவாக்கும் ஃபங்ஷன்
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // பக்கம் ரீலோட் (reload) ஆவதை நிறுத்தவும்
+
+            // ஃபார்மில் உள்ள மதிப்புகளை (values) எடுக்கவும்
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const eventDate = document.getElementById('eventDate').value;
+            const user = document.getElementById('user').value;
+
+            // API-க்கு அனுப்பத் தயாராக JSON ஆப்ஜெக்ட் (object) உருவாக்கவும்
+            const body = {
+                title: title,
+                description: description,
+                eventDate: eventDate,
+                user: user
+            };
+
+            try {
+                // API-க்கு POST ரிக்வெஸ்ட் அனுப்பவும்
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                // புதிய event-ஐ வெற்றிகரமாக உருவாக்கிய பின், லிஸ்ட்டை புதுப்பிக்கவும்
+                fetchEvents();
+                // ஃபார்மை காலி செய்யவும்
+                form.reset();
+
+            } catch (error) {
+                console.error('Error creating event:', error);
+            }
+        });
+
+        // 3. பக்கம் லோட் (load) ஆனவுடன், events-ஐ காட்டவும்
+        document.addEventListener('DOMContentLoaded', fetchEvents);
+    </script>
+</body>
+</html>
